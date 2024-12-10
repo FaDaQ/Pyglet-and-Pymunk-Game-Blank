@@ -6,7 +6,11 @@ import pymunk.pyglet_util
 draw_options = pymunk.pyglet_util.DrawOptions()
 
 class GameApp(pyglet.window.Window):
-    def __init__(self, main_batch: pyglet.graphics.Batch, space: pymunk.Space, width=1280, height=720, title="Pyglet - GameApp", fps=999,
+    def __init__(self,
+                 main_batch: pyglet.graphics.Batch, linear_batch: pyglet.graphics.Batch, nearest_batch: pyglet.graphics.Batch,
+                 space: pymunk.Space,
+                 width=1280, height=720, title="Pyglet - GameApp",
+                 fps=999,
                  **kwargs):
         super().__init__(width, height, caption=title, **kwargs)
 
@@ -14,6 +18,9 @@ class GameApp(pyglet.window.Window):
         self.game_manager = None
 
         self.__batch = main_batch
+        self.__linear_batch = linear_batch
+        self.__nearest_batch = nearest_batch
+
         self.__max_fps = fps
         self.__fixed_update_fps = 360
 
@@ -21,11 +28,19 @@ class GameApp(pyglet.window.Window):
     def on_draw(self):
         self.clear()
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-
         self.space.debug_draw(draw_options)
         self.__batch.draw()
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        self.__linear_batch.draw()
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        self.__nearest_batch.draw()
+
+
+
 
     def update(self, dt):
         if self.game_manager is not None:

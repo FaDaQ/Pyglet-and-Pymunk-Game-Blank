@@ -10,7 +10,8 @@ from Base import GameObject
 from Components import PhysicsBody2D
 from Components.Animator2D import Animator2D
 from Game.Camera import Camera
-from GLOBAL import APP, CAMERA, PYMUNK_SPACE, KEYS
+from GLOBAL import APP, CAMERA, PYMUNK_SPACE, KEYS, PLAYER_COLLISION, PLATFORM_COLLISION
+
 
 def get_axis(neg, pos):
     return int(pos) - int(neg)
@@ -32,7 +33,16 @@ class Player(GameObject):
                          subpixel, program)
 
         self.body: PhysicsBody2D = self.add_component(PhysicsBody2D(self, PYMUNK_SPACE))
-        self.body.add_shape(pymunk.Poly.create_box(self.body, (size[0]-80, size[1]-50)))
+        self.shape = pymunk.Poly.create_box(self.body, (size[0]-80, size[1]-50))
+        self.shape.collision_type = PLAYER_COLLISION
+        self.body.add_shape(self.shape)
+
+
+        self.grounded_handler = PYMUNK_SPACE.add_collision_handler(PLAYER_COLLISION, PLATFORM_COLLISION)
+        self.grounded_handler.begin = self.grounded_collision_handler
+
+        self.falling_handler = PYMUNK_SPACE.add_collision_handler(PLAYER_COLLISION, PLATFORM_COLLISION)
+        self.falling_handler.separate = self.falling_collision_handler
 
         # настраиваем и запускаем анимацию
         self.animator: Animator2D = self.add_component(Animator2D(self))
@@ -57,6 +67,11 @@ class Player(GameObject):
 
         self.speed = 250
 
+        self.grounded = False
+        self.max_jumps = 2
+        self.remaining_jumps = 0
+        self.jump_strength = 1500
+
 
     def update(self, x: float | None = None, y: float | None = None, z: float | None = None,
                rotation: float | None = None, scale: float | None = None,
@@ -66,6 +81,28 @@ class Player(GameObject):
 
     def move(self, dt):
         self.body.velocity = pymunk.Vec2d(
-            get_axis(KEYS[key.A], KEYS[key.D]) * self.speed,
+            get_axis(KEYS.is_pressed(key.A), KEYS.is_pressed(key.D)) * self.speed,
             self.body.velocity.y
         )
+        if KEYS.is_pressed_once(key.SPACE):
+            self.jump()
+
+    def jump(self):
+        if self.grounded or self.remaining_jumps > 0:
+            self.body.velocity = (self.body.velocity.x, self.jump_strength)
+            self.grounded = False
+            self.remaining_jumps -= 1
+            print(self.remaining_jumps)
+
+    def grounded_collision_handler(self, arbiter, space, data):
+        if self.body.velocity.y < 0:
+            self.grounded = True
+            self.remaining_jumps = self.max_jumps
+            self.body.velocity = pymunk.Vec2d(self.body.velocity.x, 0)
+
+        return True
+
+    def falling_collision_handler(self, arbiter, space, data):
+        if self.body.velocity.y < 0:
+            self.grounded = False
+            self.remaining_jumps -= 1
