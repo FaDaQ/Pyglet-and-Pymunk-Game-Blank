@@ -2,7 +2,6 @@ import pyglet
 from pyglet.gl import *
 import pymunk.pyglet_util
 
-
 draw_options = pymunk.pyglet_util.DrawOptions()
 
 class GameApp(pyglet.window.Window):
@@ -58,6 +57,7 @@ class GameApp(pyglet.window.Window):
 
         # Спавним круг с учётом смещения камеры
         shape = pymunk.Circle(self.space.static_body, 40, (mouse_x, mouse_y))
+        shape.collision_type = 2
         self.space.add(shape)
 
     @property

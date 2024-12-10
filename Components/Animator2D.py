@@ -37,9 +37,10 @@ class Animator2D(Component):
 
     def update_state(self, new_state):
         self.current_state = new_state
-        self.current_frame_index = 0
+        if self.current_state != new_state:
+            self.current_frame_index = 0
 
-    def update_sections(self, new_sections: dict[str, tuple[int, int]]):
+    def update_sections(self, new_sections: dict[object, tuple[int, int]]):
         self.__sections = new_sections
 
     def update_image_grid(self, new_image_grid: pyglet.image.ImageGrid):
