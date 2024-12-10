@@ -28,6 +28,7 @@ class PlayerState(enum.Enum):
     RUN = 1
     CROUCH = 2
     FALLING = 3
+    SITTING = 4
 
 
 class Player(GameObject):
@@ -70,8 +71,8 @@ class Player(GameObject):
             self.animator.update_sections({
                 PlayerState.IDLE: (0, 4),
                 PlayerState.RUN: (5, 10),
-                PlayerState.CROUCH: (17, 18),
-                PlayerState.FALLING: (13, 18)
+                PlayerState.SITTING: (17, 18),
+                PlayerState.CROUCH: (17, 24),
             })
             self.animator.update_state(self.state)
             self.animator.running = True
@@ -99,7 +100,6 @@ class Player(GameObject):
     def move(self, dt):
         if self.state == PlayerState.FALLING:
             self.animator.running = False
-            print("Да")
 
         self.body.velocity = pymunk.Vec2d(
             get_axis(KEYS.is_pressed(key.A), KEYS.is_pressed(key.D)) * self.speed,
@@ -120,12 +120,27 @@ class Player(GameObject):
         if KEYS.is_pressed_once(key.SPACE):
             self.jump()
 
+        if KEYS.is_pressed(key.LCTRL):
+            self.crouch()
+
     def jump(self):
         if self.grounded or self.remaining_jumps > 0:
             self.body.velocity = (self.body.velocity.x, self.jump_strength)
             self.grounded = False
             self.remaining_jumps -= 1
             self.state = PlayerState.FALLING
+
+    def crouch(self):
+        match self.state:
+            case PlayerState.IDLE:
+                self.state = PlayerState.SITTING
+            case PlayerState.RUN:
+                self.state = PlayerState.CROUCH
+            case PlayerState.FALLING:
+                self.state = PlayerState.SITTING
+
+        self.animator.update_state(self.state)
+        self.animator.running = True
 
     def grounded_collision_handler(self, arbiter, space, data):
         if self.body.velocity.y < 0:
